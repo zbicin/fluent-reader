@@ -61,6 +61,8 @@ import { Component, ElementRef, OnDestroy, output } from '@angular/core';
       color: #333;
       font-family: 'Playfair Display', 'Georgia', serif;
       -webkit-touch-callout: none;
+      user-select: none;
+      -webkit-user-select: none;
     }
     h1 {
       font-size: 2.5rem;
