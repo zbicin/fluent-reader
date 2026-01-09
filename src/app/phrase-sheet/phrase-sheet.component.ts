@@ -10,7 +10,7 @@ import { MatListModule } from '@angular/material/list';
   imports: [MatButtonModule, MatProgressSpinnerModule, MatListModule],
   template: `
     <div class="sheet-container">
-      <h3 class="selected-phrase">embrace</h3>
+      <h3 class="selected-phrase">{{ data.phrase }}</h3>
       
       @if (isTranslationLoading()) {
         <mat-spinner diameter="20" class="translation-spinner"></mat-spinner>
