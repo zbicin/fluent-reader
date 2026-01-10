@@ -26,9 +26,9 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   return {
     statusCode: 200,
-    body: "przyjąć, zaakceptować",
+    body: JSON.stringify({ translation: "przyjąć, zaakceptować" }),
     headers: {
-        'Content-Type': 'text/plain; charset=utf-8'
+        'Content-Type': 'application/json; charset=utf-8'
     }
   };
 };
