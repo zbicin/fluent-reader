@@ -1,0 +1,17 @@
+
+> fluent-reader@0.0.0 start
+> ng serve
+
+❯ Building...
+✔ Building...
+Initial chunk files | Names         | Raw size
+main.js             | main          | 26.93 kB |
+styles.css          | styles        |  8.79 kB |
+
+                    | Initial total | 35.71 kB
+
+Application bundle generation complete. [2.742 seconds] - 2026-01-10T20:30:10.774Z
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  ➜  Local:   http://localhost:4200/
