@@ -1,36 +1,36 @@
-import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
+import { Config, Context } from "@netlify/functions";
 
-const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method Not Allowed" }),
-    };
+export default async (req: Request, context: Context) => {
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ message: "Method Not Allowed" }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   try {
-    const body = JSON.parse(event.body || "{}");
+    const body = await req.json();
     if (!body.phrase) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Bad Request: 'phrase' property is missing." }),
-      };
+        return new Response(JSON.stringify({ message: "Bad Request: 'phrase' property is missing." }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
   } catch (error) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: "Bad Request: Invalid JSON payload." }),
-    };
+    return new Response(JSON.stringify({ message: "Bad Request: Invalid JSON payload." }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+    });
   }
 
+  const responseObject = { translation: "przyjąć, zaakceptować" };
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ translation: "przyjąć, zaakceptować" }),
-    headers: {
-        'Content-Type': 'application/json; charset=utf-8'
-    }
-  };
+  return new Response(JSON.stringify(responseObject), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+  });
 };
 
-export { handler };
+export const config: Config = {
+  path: "/api/translation"
+};
