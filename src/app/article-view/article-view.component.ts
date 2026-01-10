@@ -1,4 +1,4 @@
-import { Component, OnInit, output, inject } from '@angular/core';
+import { Component, OnInit, output, inject, Renderer2, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
@@ -7,7 +7,12 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <article class="article-container" (click)="handleArticleClick($event)">
+    <article
+      class="article-container"
+      (mousedown)="handleMouseDown($event)"
+      (mousemove)="handleMouseMove($event)"
+      (mouseup)="handleMouseUp()"
+    >
       <header>
         <h1 [innerHTML]="processedTitle"></h1>
       </header>
@@ -58,12 +63,21 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       :host ::ng-deep span[data-word]:hover {
         background-color: #f0f0f0;
       }
+      :host ::ng-deep span.selected {
+        background-color: #ffd700;
+      }
     `,
   ],
 })
 export class ArticleViewComponent implements OnInit {
   readonly selectedPhrase = output<string>();
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly renderer = inject(Renderer2);
+  private readonly elementRef = inject(ElementRef);
+
+  private isSelecting = false;
+  private startWordElement: HTMLElement | null = null;
+  private selectionEndWordElement: HTMLElement | null = null;
 
   rawTitle = 'The Power of Reading: Elevating Your Language Journey';
   rawParagraphs: string[] = [
@@ -77,19 +91,84 @@ export class ArticleViewComponent implements OnInit {
   processedParagraphs: SafeHtml[] = [];
 
   ngOnInit(): void {
-    this.processedTitle = this.processText(this.rawTitle);
-    this.processedParagraphs = this.rawParagraphs.map(p => this.processText(p));
+    this.processedTitle = this.processText(this.rawTitle, 'title');
+    this.processedParagraphs = this.rawParagraphs.map((p, index) => this.processText(p, `p${index}`));
   }
 
-  private processText(text: string): SafeHtml {
-    const processedHtml = text.replace(/([a-zA-Z'’]+)/g, `<span data-word="$1">$1</span>`);
+  private processText(text: string, paragraphId: string): SafeHtml {
+    const processedHtml = text.replace(/([a-zA-Z'’]+)/g, (match) => {
+      return `<span data-word="${match}">${match}</span>`;
+    });
     return this.sanitizer.bypassSecurityTrustHtml(processedHtml);
   }
 
-  handleArticleClick(event: MouseEvent): void {
+  handleMouseDown(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (target.tagName === 'SPAN' && target.dataset['word']) {
-      this.selectedPhrase.emit(target.dataset['word']);
+    if (this.isWordElement(target)) {
+      this.isSelecting = true;
+      this.startWordElement = target;
+      this.selectionEndWordElement = target;
+      this.highlightWords();
+      event.preventDefault();
     }
+  }
+
+  handleMouseMove(event: MouseEvent): void {
+    if (this.isSelecting) {
+      const target = event.target as HTMLElement;
+      if (this.isWordElement(target) && target !== this.selectionEndWordElement) {
+        this.selectionEndWordElement = target;
+        this.highlightWords();
+      }
+    }
+  }
+
+  handleMouseUp(): void {
+    if (this.isSelecting && this.startWordElement && this.selectionEndWordElement) {
+      const selectedWords = this.getSelectedWords();
+      if (selectedWords.length > 0) {
+        this.selectedPhrase.emit(selectedWords.join(' '));
+      }
+    }
+    this.isSelecting = false;
+    this.startWordElement = null;
+    this.selectionEndWordElement = null;
+    this.clearHighlights();
+  }
+
+  private highlightWords(): void {
+    this.clearHighlights();
+    const words = this.getWordsInSelection();
+    words.forEach(word => this.renderer.addClass(word, 'selected'));
+  }
+
+  private getSelectedWords(): string[] {
+    return this.getWordsInSelection().map(el => el.dataset['word'] || '');
+  }
+
+  private getWordsInSelection(): HTMLElement[] {
+    if (!this.startWordElement || !this.selectionEndWordElement) {
+      return [];
+    }
+
+    const allWords = Array.from(this.elementRef.nativeElement.querySelectorAll('[data-word]')) as HTMLElement[];
+    const startIndex = allWords.indexOf(this.startWordElement);
+    const endIndex = allWords.indexOf(this.selectionEndWordElement);
+
+    if (startIndex === -1 || endIndex === -1) {
+      return [];
+    }
+
+    const [start, end] = [Math.min(startIndex, endIndex), Math.max(startIndex, endIndex)];
+    return allWords.slice(start, end + 1);
+  }
+
+  private clearHighlights(): void {
+    const selectedElements = this.elementRef.nativeElement.querySelectorAll('.selected');
+    selectedElements.forEach((el: Element) => this.renderer.removeClass(el, 'selected'));
+  }
+
+  private isWordElement(element: HTMLElement): element is HTMLElement {
+    return element.tagName === 'SPAN' && 'word' in element.dataset;
   }
 }
