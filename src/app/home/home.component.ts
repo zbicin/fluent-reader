@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ViewChild, inject } from '@angular/core';
 import { ArticleViewComponent } from '../article-view/article-view.component';
 import { Subject, debounceTime, filter, map } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -26,6 +26,7 @@ import { PhraseSheetComponent } from '../phrase-sheet/phrase-sheet.component';
   `]
 })
 export class HomeComponent {
+  @ViewChild(ArticleViewComponent) articleView?: ArticleViewComponent;
   private readonly selection$ = new Subject<string>();
   private readonly bottomSheet = inject(MatBottomSheet);
 
@@ -38,9 +39,12 @@ export class HomeComponent {
         takeUntilDestroyed()
       )
       .subscribe((phrase) => {
-        console.log('Selected phrase:', phrase);
-        this.bottomSheet.open(PhraseSheetComponent, {
+        const bottomSheetRef = this.bottomSheet.open(PhraseSheetComponent, {
           data: { phrase },
+        });
+
+        bottomSheetRef.afterDismissed().subscribe(() => {
+          this.articleView?.clearSelection();
         });
       });
   }
