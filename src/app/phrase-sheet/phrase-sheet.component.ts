@@ -1,8 +1,9 @@
-import { Component, Inject, OnInit, signal } from '@angular/core';
+import { Component, inject, Inject, OnInit, signal } from '@angular/core';
 import { MAT_BOTTOM_SHEET_DATA } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatListModule } from '@angular/material/list';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-phrase-sheet',
@@ -15,7 +16,7 @@ import { MatListModule } from '@angular/material/list';
       @if (isTranslationLoading()) {
         <mat-spinner diameter="20" class="translation-spinner"></mat-spinner>
       } @else {
-        <h4 class="translation">przyjąć, zaakceptować</h4>
+        <h4 class="translation">{{ translation() }}</h4>
       }
       
       <div class="content-area">
@@ -81,13 +82,25 @@ export class PhraseSheetComponent implements OnInit {
   isLoading = signal(false);
   showExamples = signal(false);
   isTranslationLoading = signal(true);
+  translation = signal('');
+
+  private readonly httpClient = inject(HttpClient);
 
   constructor(@Inject(MAT_BOTTOM_SHEET_DATA) public data: { phrase: string }) {}
 
   ngOnInit() {
-    setTimeout(() => {
-      this.isTranslationLoading.set(false);
-    }, 400);
+    this.httpClient
+      .post<{ translation: string }>('/api/translation', { phrase: this.data.phrase })
+      .subscribe({
+        next: (response) => {
+          this.translation.set(response.translation);
+          this.isTranslationLoading.set(false);
+        },
+        error: () => {
+          this.translation.set('Error');
+          this.isTranslationLoading.set(false);
+        },
+      });
   }
 
   loadExamples() {
