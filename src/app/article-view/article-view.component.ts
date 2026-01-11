@@ -81,6 +81,10 @@ export class ArticleViewComponent implements OnInit {
   private isSelecting = false;
   private startWordElement: HTMLElement | null = null;
   private selectionEndWordElement: HTMLElement | null = null;
+  private longPressTimer: any;
+  private touchStartPosition: { x: number; y: number } | null = null;
+  private readonly longPressDuration = 300; // ms
+  private readonly touchMoveThreshold = 10; // px
 
   rawTitle = 'The Power of Reading: Elevating Your Language Journey';
   rawParagraphs: string[] = [
@@ -121,18 +125,43 @@ export class ArticleViewComponent implements OnInit {
   }
 
   handleTouchStart(event: TouchEvent): void {
-    const target = this.getWordElementFromTouchEvent(event);
-    this.selectionStart(target);
-    event.preventDefault();
+    if (event.touches.length > 0) {
+      const touch = event.touches[0];
+      this.touchStartPosition = { x: touch.clientX, y: touch.clientY };
+    }
+
+    this.longPressTimer = setTimeout(() => {
+      const target = this.getWordElementFromTouchEvent(event);
+      this.selectionStart(target);
+      // Only prevent default behavior when selection starts.
+      event.preventDefault();
+      this.longPressTimer = null;
+    }, this.longPressDuration);
   }
 
   handleTouchMove(event: TouchEvent): void {
-    const target = this.getWordElementFromTouchEvent(event);
-    this.selectionMove(target);
+    if (this.longPressTimer && this.touchStartPosition) {
+      if (event.touches.length > 0) {
+        const touch = event.touches[0];
+        const deltaX = Math.abs(touch.clientX - this.touchStartPosition.x);
+        const deltaY = Math.abs(touch.clientY - this.touchStartPosition.y);
+        if (deltaX > this.touchMoveThreshold || deltaY > this.touchMoveThreshold) {
+          clearTimeout(this.longPressTimer);
+          this.longPressTimer = null;
+        }
+      }
+    } else if (this.isSelecting) {
+      const target = this.getWordElementFromTouchEvent(event);
+      this.selectionMove(target);
+    }
   }
 
   handleTouchEnd(): void {
-    this.selectionEnd();
+    clearTimeout(this.longPressTimer);
+    this.longPressTimer = null;
+    if (this.isSelecting) {
+      this.selectionEnd();
+    }
   }
 
   private getWordElementFromTouchEvent(event: TouchEvent): HTMLElement | null {
