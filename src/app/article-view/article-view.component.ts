@@ -12,6 +12,9 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       (mousedown)="handleMouseDown($event)"
       (mousemove)="handleMouseMove($event)"
       (mouseup)="handleMouseUp()"
+      (touchstart)="handleTouchStart($event)"
+      (touchmove)="handleTouchMove($event)"
+      (touchend)="handleTouchEnd()"
     >
       <header>
         <h1 [innerHTML]="processedTitle"></h1>
@@ -91,11 +94,11 @@ export class ArticleViewComponent implements OnInit {
   processedParagraphs: SafeHtml[] = [];
 
   ngOnInit(): void {
-    this.processedTitle = this.processText(this.rawTitle, 'title');
-    this.processedParagraphs = this.rawParagraphs.map((p, index) => this.processText(p, `p${index}`));
+    this.processedTitle = this.processText(this.rawTitle);
+    this.processedParagraphs = this.rawParagraphs.map((p) => this.processText(p));
   }
 
-  private processText(text: string, paragraphId: string): SafeHtml {
+  private processText(text: string): SafeHtml {
     const processedHtml = text.replace(/([a-zA-Z'’]+)/g, (match) => {
       return `<span data-word="${match}">${match}</span>`;
     });
@@ -104,26 +107,59 @@ export class ArticleViewComponent implements OnInit {
 
   handleMouseDown(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (this.isWordElement(target)) {
+    this.selectionStart(target);
+    event.preventDefault();
+  }
+
+  handleMouseMove(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    this.selectionMove(target);
+  }
+
+  handleMouseUp(): void {
+    this.selectionEnd();
+  }
+
+  handleTouchStart(event: TouchEvent): void {
+    const target = this.getWordElementFromTouchEvent(event);
+    this.selectionStart(target);
+    event.preventDefault();
+  }
+
+  handleTouchMove(event: TouchEvent): void {
+    const target = this.getWordElementFromTouchEvent(event);
+    this.selectionMove(target);
+  }
+
+  handleTouchEnd(): void {
+    this.selectionEnd();
+  }
+
+  private getWordElementFromTouchEvent(event: TouchEvent): HTMLElement | null {
+    if (event.touches.length === 0) {
+      return null;
+    }
+    const touch = event.touches[0];
+    return document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
+  }
+
+  private selectionStart(target: HTMLElement | null): void {
+    if (target && this.isWordElement(target)) {
       this.isSelecting = true;
       this.startWordElement = target;
       this.selectionEndWordElement = target;
       this.highlightWords();
-      event.preventDefault();
     }
   }
 
-  handleMouseMove(event: MouseEvent): void {
-    if (this.isSelecting) {
-      const target = event.target as HTMLElement;
-      if (this.isWordElement(target) && target !== this.selectionEndWordElement) {
-        this.selectionEndWordElement = target;
-        this.highlightWords();
-      }
+  private selectionMove(target: HTMLElement | null): void {
+    if (this.isSelecting && target && this.isWordElement(target) && target !== this.selectionEndWordElement) {
+      this.selectionEndWordElement = target;
+      this.highlightWords();
     }
   }
 
-  handleMouseUp(): void {
+  private selectionEnd(): void {
     if (this.isSelecting && this.startWordElement && this.selectionEndWordElement) {
       const selectedWords = this.getSelectedWords();
       if (selectedWords.length > 0) {
@@ -133,7 +169,8 @@ export class ArticleViewComponent implements OnInit {
     this.isSelecting = false;
     this.startWordElement = null;
     this.selectionEndWordElement = null;
-    this.clearHighlights();
+    // Keep the highlights until the next selection starts to show the user what was selected.
+    // this.clearHighlights();
   }
 
   private highlightWords(): void {
