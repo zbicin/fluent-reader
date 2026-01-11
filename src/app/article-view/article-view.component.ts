@@ -237,4 +237,8 @@ export class ArticleViewComponent implements OnInit {
   private isWordElement(element: HTMLElement): element is HTMLElement {
     return element.tagName === 'SPAN' && 'word' in element.dataset;
   }
+
+  public clearSelection(): void {
+    this.clearHighlights();
+  }
 }
