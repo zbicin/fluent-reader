@@ -26,7 +26,7 @@ export default async (req: Request, context: Context) => {
   }
 
   try {
-    const browserlessUrl = `https://production-ams.browserless.io/chrome/content?blockAds=true&timeout=60000&token=${token}`;
+    const browserlessUrl = `https://production-ams.browserless.io/chrome/content?blockAds=true&timeout=60000&stealth&token=${token}`;
     const response = await fetch(browserlessUrl, {
       method: 'POST',
       headers: {
