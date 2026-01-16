@@ -13,6 +13,7 @@ export default async (req: Request, context: Context) => {
   const url = new URL(req.url);
   const targetUrl = url.searchParams.get('url');
   const token = url.searchParams.get('token');
+  const contentType = url.searchParams.get('contentType') || 'text/html';
 
   if (!targetUrl || !token) {
     return new Response(
@@ -63,7 +64,7 @@ export default async (req: Request, context: Context) => {
 
     return new Response(article.content, {
       status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: { 'Content-Type': `${contentType}; charset=utf-8` },
     });
   } catch (error) {
     return new Response(
