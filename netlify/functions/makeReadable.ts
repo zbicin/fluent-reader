@@ -1,6 +1,7 @@
 import { Config, Context } from '@netlify/functions';
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
+import DOMPurify from 'dompurify';
 
 export default async (req: Request, context: Context) => {
   if (req.method !== 'GET') {
@@ -62,7 +63,10 @@ export default async (req: Request, context: Context) => {
         });
     }
 
-    return new Response(article.content, {
+    const sanitizer = DOMPurify(doc.window as unknown as Window);
+    const cleanContent = sanitizer.sanitize(article.content);
+
+    return new Response(cleanContent, {
       status: 200,
       headers: { 'Content-Type': `${contentType}; charset=utf-8` },
     });
