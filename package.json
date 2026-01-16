@@ -42,7 +42,8 @@
     "@netlify/functions": "^5.1.2",
     "@types/mozilla-readability": "^0.2.1",
     "angular-cli-ghpages": "^3.0.1",
-    "jsdom": "^27.1.0",
+    "jsdom": "^22.1.0",
+    "patch-package": "^8.0.1",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"
   }
